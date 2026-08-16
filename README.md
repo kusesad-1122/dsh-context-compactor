@@ -28,6 +28,24 @@
   自动降低总结预算重试，最多 4 次；仍不能下降就明确报错，绝不“假压缩”；
 - 日志会打印 `before → after tokens（xx% reduced）`，方便确认真的压缩了。
 
+### 1.6 真实上下文窗口（modlens / 第三方 provider 适配）
+
+- 部分 provider（如 `modlens-qwen`）会向 DSH 上报一个很大的 `contextWindow`
+  （例如 1,000,000），但真实可用窗口只有 256k。这会导致阈值算错、永远“不到 80%”。
+- 插件现在的窗口解析顺序：
+  1. `modelPolicies[].contextWindow`（显式覆盖，最优先）；
+  2. 会话请求头里 ≥100k 的 `maxTokens`（视为真实窗口兜底，如 256000）；
+  3. 适配器上报的 `contextWindow`（最后回退）。
+- 需要手动指定时，在 profile 的插件 config 里加：
+
+```yaml
+modelPolicies:
+  - provider: modlens-qwen
+    model: DeepSeek-V4-Flash-0731
+    contextWindow: 262144   # 按真实窗口填
+    thresholdRatio: 0.8
+```
+
 ### 2. 全局详细总结 + 双份保存
 
 - **全局，不是只压一段**：每次触发都把“全部较早历史”（从最早消息到保留尾巴之前）
