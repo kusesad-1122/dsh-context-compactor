@@ -1,6 +1,6 @@
 {
   "name": "@dsh-external/dsh-context-compactor",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "DSH 上下文压缩/总结 + 提示增强 合并插件：80% 阈值自动【全局详细总结】压缩（保留：核心任务与进度、关键决策及理由、待解决问题、重要文件/代码位置；删除：调试过程、已解决错误、客套话与重复；旧 checkpoint 全局合并），【压缩后验】每次压缩必须实际降低 totalTokens，否则自动加深压缩；context-overflow 自动恢复重试、工具结果裁剪、/compact、/enhance-prompt（LLM-Prompt-Enhancer 合并功能，用当前模型增强提示词）与 /context-status 命令，并在输入框上方提供「压缩总结」+「提示增强」按钮（用量百分比实时显示）",
   "private": true,
   "type": "module",
