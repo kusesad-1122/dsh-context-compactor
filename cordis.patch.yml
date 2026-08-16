@@ -1,0 +1,10 @@
+# dsh-context-compactor bundle 层：插入一行装配，默认配置开箱即用。
+# 自定义阈值时把 config: {} 替换为：
+#   config:
+#     thresholdRatio: 0.7
+#     retainRatio: 0.2
+#     maxOverflowRetries: 3
+- insert:
+    - id: dsh-context-compactor
+      name: '@dsh-external/dsh-context-compactor'
+      config: {}
