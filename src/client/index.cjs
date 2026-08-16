@@ -10,7 +10,7 @@
  */
 
 const React = require('react')
-const { IconSparkle16, Tooltip } = require('@deepseek-ai/dsh-client-ui-primitives')
+const { IconEnhanceOutline16, IconSparkle16, Tooltip } = require('@deepseek-ai/dsh-client-ui-primitives')
 
 const name = 'dsh-context-compactor'
 const inject = ['slots', 'remote', 'remote.commands']
@@ -96,8 +96,10 @@ function CompactDock(props) {
   const { session, useProjection } = props
   const pressure = typeof useProjection === 'function' ? useProjection('contextPressure') : undefined
   const [pending, setPending] = React.useState(false)
+  const [enhancing, setEnhancing] = React.useState(false)
   const [feedback, setFeedback] = React.useState(null)
   const pendingRef = React.useRef(false)
+  const enhancingRef = React.useRef(false)
   const timerRef = React.useRef(null)
 
   React.useEffect(() => {
@@ -121,6 +123,40 @@ function CompactDock(props) {
       setPending(false)
     }
   }, [props.compact, session.running])
+
+  const runEnhance = React.useCallback(async () => {
+    const draft = props.input && typeof props.input.draft === 'string' ? props.input.draft : ''
+    if (!draft.trim()) {
+      setFeedback('输入为空：先写点内容再增强')
+      if (timerRef.current !== null) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(() => { setFeedback(null) }, 5000)
+      return
+    }
+    if (enhancingRef.current) return
+    enhancingRef.current = true
+    setEnhancing(true)
+    setFeedback(null)
+    try {
+      const res = await props.enhance(draft)
+      let msg
+      if (res && res.ok) {
+        if (props.inputActions && typeof props.inputActions.setDraft === 'function') {
+          props.inputActions.setDraft(res.text)
+          msg = '已增强并写入输入框'
+        } else {
+          msg = res.text
+        }
+      } else {
+        msg = (res && res.error) || '增强失败'
+      }
+      setFeedback(msg)
+      if (timerRef.current !== null) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(() => { setFeedback(null) }, 10000)
+    } finally {
+      enhancingRef.current = false
+      setEnhancing(false)
+    }
+  }, [props.enhance, props.input, props.inputActions])
 
   // 全新空白会话不显示工具条。
   if (session.blank) return null
@@ -175,6 +211,33 @@ function CompactDock(props) {
               ),
         ),
       ),
+      React.createElement(
+        Tooltip,
+        {
+          label: '用当前模型增强输入框提示词（Prompt Enhancer 合并功能）',
+          side: 'top',
+          delayMs: 500,
+        },
+        React.createElement(
+          'button',
+          {
+            type: 'button',
+            className: 'cc-button',
+            disabled: enhancing || session.running,
+            onClick: () => { void runEnhance() },
+            'aria-label': '增强提示词',
+            title: session.running ? 'agent 运行中，稍后再试' : undefined,
+          },
+          enhancing
+            ? React.createElement('span', null, '增强中…')
+            : React.createElement(
+                React.Fragment,
+                null,
+                React.createElement(IconEnhanceOutline16, { size: 14 }),
+                React.createElement('span', null, '提示增强'),
+              ),
+        ),
+      ),
     ),
   )
 }
@@ -195,6 +258,25 @@ function apply(ctx) {
           return result.value.text
         } catch (error) {
           return error instanceof Error ? error.message : String(error)
+        }
+      },
+      /** 用 DSH 当前模型增强提示词；返回 {ok,text|error}。 */
+      enhance: async (text) => {
+        try {
+          const result = await ctx.remote.commands.execute(
+            sessionId,
+            '/enhance-prompt ' + JSON.stringify({ text }),
+          )
+          if (!result.ok) {
+            return { ok: false, error: result.error.message + ' (' + result.error.code + ')' }
+          }
+          const value = result.value
+          if (!value || value.kind === 'error') {
+            return { ok: false, error: value ? value.text : '增强失败' }
+          }
+          return { ok: true, text: value.text }
+        } catch (error) {
+          return { ok: false, error: error instanceof Error ? error.message : String(error) }
         }
       },
     }),

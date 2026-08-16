@@ -54,14 +54,17 @@
 - 超过 `pruneThresholdChars`（默认 8192 字符）的工具输出，保留头 + 标记 + 尾；
 - 只裁剪工具结果文本，**对话历史一律走详细总结**，绝不粗暴截断。
 
-### 5. 输入框上方的「压缩总结」按钮
+### 5. 输入框上方的「压缩总结」+「提示增强」按钮
 
 - 浏览器半边通过 `dsh.client` 清单自动发现，注册到 `conversation.input.dock`
   （输入框正上方，与 goal/todo 工具条同一排）；
 - 工具条实时显示**上下文用量百分比**（`contextPressure` 投影），到 80% 自动
   高亮提醒；
-- 点击按钮通过 `remote.commands.execute(sessionId, '/compact')` 立即触发
-  全局详细总结压缩，按钮会显示「压缩总结中…」并在条上回显结果；
+- 左侧按钮「压缩总结」：点击通过 `remote.commands.execute(sessionId, '/compact')`
+  立即触发全局详细总结压缩，按钮会显示「压缩总结中…」并在条上回显结果；
+- 右侧按钮「提示增强」：这是合并自 [LLM-Prompt-Enhancer](https://github.com/RunOnCodes/LLM-Prompt-Enhancer)
+  的功能，点击读取输入框草稿，调用 DSH 当前模型增强为更清晰的提示词，
+  自动写回输入框（无需额外 Groq Key）；按钮显示「增强中…」并在条上回显结果；
 - agent 运行中按钮自动禁用；全新空白会话不显示。
 
 ### 6. 手动命令
@@ -69,6 +72,7 @@
 | 命令 | 作用 |
 | --- | --- |
 | `/compact` | 立即【全局详细总结】并把全部较早历史压缩成一个 checkpoint |
+| `/enhance-prompt` | 用当前模型增强提示词（支持直接跟文本或 JSON `{"text":"..."}`） |
 | `/context-status` | 查看 token 用量、窗口、80% 阈值、风险与总结保存路径 |
 
 ## 默认配置
